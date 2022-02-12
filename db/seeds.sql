@@ -1,0 +1,60 @@
+INSERT INTO department(department_name)
+VALUES 
+    ('Sales'),
+    ('Engineering'),
+    ('Finance'), 
+    ('Legal');
+
+INSERT INTO role(title, salary, department_id)
+VALUES 
+    ('Sales Manager', 100000, 1),
+    ('Sales Associate', 75000, 1),
+    ('Lead Engineer', 150000, 2),
+    ('Software Engineer', 130000, 2),
+    ('Account Manager', 165000, 3),
+    ('Accountant', 120000, 3),
+    ('Legal Team Leader', 200000, 4),
+    ('Lawyer', 175000, 4);
+
+INSERT INTO employee(first_name, last_name, role_id, manager_id)
+VALUES
+      ('James', 'Fraser', 1, NULL),
+  ('Jack', 'London', 1, 1),
+  ('Robert', 'Bruce', 1, 1),
+  ('Peter', 'Greenaway', 2, 2),
+  ('Derek', 'Jarman', 2, 2),
+  ('Paolo', 'Pasolini', 2, 2),
+  ('Heathcote', 'Williams', 2, 3),
+  ('Sandy', 'Powell', 2, 3),
+  ('Emil', 'Zola', 2, 3),
+  ('Sissy', 'Coalpits', 2, 3),
+  ('Antoinette', 'Capet', 3, NULL),
+  ('Samuel', 'Delany', 3, 11),
+  ('Tony', 'Duvert', 3, 11),
+  ('Dennis', 'Cooper', 4, 12),
+  ('Monica', 'Bellucci', 4, 12),
+  ('Samuel', 'Johnson', 4, 12),
+  ('John', 'Dryden', 4, 12),
+  ('Alexander', 'Pope', 4, 13),
+  ('Lionel', 'Johnson', 4, 13),
+  ('Aubrey', 'Beardsley', 4, 13),
+  ('Tulse', 'Luper', 5, NULL),
+  ('William', 'Morris', 5, 21),
+  ('George', 'Shaw', 5, 21),
+  ('Arnold', 'Bennett', 6, 22),
+  ('Algernon', 'Blackwood', 6, 22),
+  ('Rhoda', 'Broughton', 6, 22),
+  ('Hart', 'Crane', 6, 22),
+  ('Vitorio', 'DeSica', 6, 23),
+  ('Wilkie', 'Collins', 6, 23),
+  ('Elizabeth', 'Gaskell', 6, 23),
+  ('George', 'Sand', 7, NULL),
+  ('Vernon', 'Lee', 7, 31),
+  ('Arthur', 'Machen', 7, 31),
+  ('Frederick', 'Marryat', 8, 32),
+  ('Harriet', 'Martineau', 8, 32),
+  ('George', 'Meredith', 8, 32),
+  ('Margaret', 'Oliphant', 8, 33),
+  ('Anthony', 'Trollope', 8, 33),
+  ('Charlotte', 'Yonge', 8, 33),
+  ('Horace', 'Walpole', 8, 33);
