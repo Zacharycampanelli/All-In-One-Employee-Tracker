@@ -53,6 +53,7 @@ const promptUser = () => {
       }
 
       if (choices === 'View all Employees') {
+        viewEmployee(0);
         viewEmployees();
       }
 
@@ -99,6 +100,15 @@ viewRoles = () => {
     });
 
   promptUser();
+};
+
+viewEmployee = (id) => {
+  const sql = `SELECT * FROM employee WHERE employee.id = ${parseInt(id)}`;
+  connection /*.promise()*/
+    .query(sql, (err, rows) => {
+      if (err) throw err;
+      console.table(rows);
+    });
 };
 
 viewEmployees = () => {
@@ -245,11 +255,13 @@ const addRole = () => {
       ])
       .then((roleData) => {
         let newRoleName = roleData.newRole;
-        let deptID;// = roleData.departmentName;
+        let deptID; // = roleData.departmentName;
 
         response.forEach((department) => {
-            if (roleData.department_name === department.department_name) {deptID = department.id}
-        })
+          if (roleData.department_name === department.department_name) {
+            deptID = department.id;
+          }
+        });
 
         let sql = `INSERT INTO role (title, salary, department_id) VALUES (?,?,?)`;
         let newest = [newRoleName, roleData.salary, deptID];
@@ -262,7 +274,106 @@ const addRole = () => {
   });
 };
 
-addDepartment = () => {};
+addDepartment = () => {
+  inquirer
+    .prompt([
+      {
+        type: 'input',
+        name: 'newDept',
+        message: 'Please enter the name of the new department',
+        validate: (addDept) => {
+          if (addDept) {
+            return true;
+          } else {
+            console.log('Please enter the name of the new role:');
+            return false;
+          }
+        },
+      },
+    ])
+    .then((deptData) => {
+      let deptName = deptData.newDept;
+      let sql = `INSERT INTO department (department_name) VALUES (?)`;
+
+      connection.query(sql, deptName, (error) => {
+        if (error) throw error;
+        viewDepartments();
+      });
+    });
+};
+
+// UPDATE
+
+updateEmployeeRole = () => {
+  let sql =
+    'SELECT employee.id, employee.first_name, employee.last_name, role.id AS "role_id" FROM employee, role, department WHERE department.id = role.department_id AND role.id = employee.role_id';
+  let employeeList = [];
+
+  connection.query(sql, (error, response) => {
+    if (error) throw error;
+
+    response.forEach((employee) => {
+      employeeList.push(employee.first_name + ' ' + employee.last_name);
+    });
+    console.log(employeeList);
+
+    let sql = 'SELECT role.id, role.title FROM role';
+    let roleList = [];
+    connection.query(sql, (error, response) => {
+      if (error) throw error;
+
+      response.forEach((role) => {
+        roleList.push(role.title);
+      });
+
+      inquirer
+        .prompt([
+          {
+            type: 'list',
+            name: 'chosenEmployee',
+            message: 'Select Employee to update:',
+            choices: employeeList,
+          },
+          {
+            type: 'list',
+            name: 'chosenRole',
+            message: 'Select Role to update to:',
+            choices: roleList,
+          },
+        ])
+        .then((res) => {
+          let newRoleID, employeeID;
+          
+          response.forEach((role) => {
+            if (res.chosenRole === role.title) {
+              console.log('true', role.id);
+              newRoleID = role.id;
+              console.log(newRoleID);
+            }
+          });
+          
+          for(let i = 0; i < employeeList.length; i++) {
+            if (res.chosenEmployee === employeeList[i]) {
+              employeeID = i+1;
+            } console.log(res.chosenEmployee, employeeID);
+          }
+          // employeeList.forEach((employee) => {
+          //   if (res.chosenEmployee === employeeList[employee]) {
+          //     employeeID = 'employee.id';
+          //   }
+          //  
+          // });
+       
+
+        let updateSQL = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
+        connection.query(updateSQL, [newRoleID, employeeID], (error) => {
+          if (error) throw error;
+          promptUser();
+         });
+        });
+    });
+  });
+};
 
 // // Default response for any other request (Not Found)
 // app.use((req, res) => {
