@@ -3,6 +3,8 @@ const connection = require('./db/connections');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
 const mysql = require('mysql2');
+const { connect } = require('./db/connections');
+const PromptUI = require('inquirer/lib/ui/prompt');
 // const PORT = process.env.PORT || 3001;
 // const app = express();
 
@@ -32,8 +34,8 @@ const promptUser = () => {
           'Add a Role',
           'Add an Employee',
           'Update an employee role',
-          // Update employee managers
-          // View employees by manager
+          'Update employee managers',
+          'View employees by manager',
           // View employees by department
           // Delete departments, roles, employees
           // View combined salaries of a department
@@ -53,7 +55,6 @@ const promptUser = () => {
       }
 
       if (choices === 'View all Employees') {
-        viewEmployee(0);
         viewEmployees();
       }
 
@@ -71,6 +72,14 @@ const promptUser = () => {
 
       if (choices === 'Update an employee role') {
         updateEmployeeRole();
+      }
+
+      if (choices === 'Update employee managers') {
+        updateManager();
+      }
+
+      if (choices === 'View employees by manager') {
+        viewEmployeesByManager();
       }
 
       if (choices === 'Exit') {
@@ -102,14 +111,14 @@ viewRoles = () => {
   promptUser();
 };
 
-viewEmployee = (id) => {
-  const sql = `SELECT * FROM employee WHERE employee.id = ${parseInt(id)}`;
-  connection /*.promise()*/
-    .query(sql, (err, rows) => {
-      if (err) throw err;
-      console.table(rows);
-    });
-};
+// viewEmployee = (id) => {
+//   const sql = `SELECT * FROM employee WHERE employee.id = ${parseInt(id)}`;
+//   connection /*.promise()*/
+//     .query(sql, (err, rows) => {
+//       if (err) throw err;
+//       console.table(rows);
+//     });
+// };
 
 viewEmployees = () => {
   const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, role.title AS role_title, 
@@ -123,9 +132,49 @@ viewEmployees = () => {
     .query(sql, (err, rows) => {
       if (err) throw err;
       console.table(rows);
+      promptUser();
+    });
+};
+
+viewEmployeesByManager = () => {
+  let sql = `SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id FROM employee`;
+  let employeeList = [];
+
+  connection.query(sql, (error, response) => {
+    if (error) throw error;
+
+    response.forEach((employee) => {
+      employeeList.push(employee.first_name + ' ' + employee.last_name);
     });
 
-  promptUser();
+    inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'manager',
+          message: 'Select Manager to view employees they manage:',
+          choices: employeeList,
+        },
+      ])
+      .then((res) => {
+        let managerID;
+
+        response.forEach((employee) => {
+          if (res.manager === employee.first_name + ' ' + employee.last_name) {
+            managerID = employee.id;
+            console.log('success' + managerID);
+          }
+          const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, employee.manager_id 
+          FROM employee
+          WHERE employee.manager_id = ?`;
+
+          connection.query(sql, [managerID], (error) => {
+            if (error) throw error;
+            promptUser();
+          });
+        });
+      });
+  });
 };
 
 // ADD
@@ -314,8 +363,9 @@ updateEmployeeRole = () => {
 
     response.forEach((employee) => {
       employeeList.push(employee.first_name + ' ' + employee.last_name);
+      console.log('employee');
+      console.log(employee);
     });
-    console.log(employeeList);
 
     let sql = 'SELECT role.id, role.title FROM role';
     let roleList = [];
@@ -343,38 +393,109 @@ updateEmployeeRole = () => {
         ])
         .then((res) => {
           let newRoleID, employeeID;
-          
+
+          // function iterate(item) {
+          //   // if(item)
+          //   console.log(res);
+          //   console.log();
+          //   console.log(response);
+
+          // }
+
+          // response.forEach(iterate);
+
           response.forEach((role) => {
+            console.log('%*%*%*');
+            console.log(role);
             if (res.chosenRole === role.title) {
-              console.log('true', role.id);
+              console.log('success');
+              console.log(role.id);
               newRoleID = role.id;
-              console.log(newRoleID);
             }
           });
-          
-          for(let i = 0; i < employeeList.length; i++) {
+
+          for (let i = 0; i < employeeList.length; i++) {
             if (res.chosenEmployee === employeeList[i]) {
-              employeeID = i+1;
-            } console.log(res.chosenEmployee, employeeID);
+              console.log(res.chosenEmployee);
+              console.log(employeeList[i]);
+              employeeID = i + 1;
+              console.log(employeeID);
+            }
           }
+
           // employeeList.forEach((employee) => {
           //   if (res.chosenEmployee === employeeList[employee]) {
           //     employeeID = 'employee.id';
           //   }
-          //  
+          //
           // });
-       
 
-        let updateSQL = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
-        connection.query(updateSQL, [newRoleID, employeeID], (error) => {
-          if (error) throw error;
-          promptUser();
-         });
+          let updateSQL = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
+          connection.query(updateSQL, [newRoleID, employeeID], (error) => {
+            if (error) throw error;
+            promptUser();
+          });
         });
     });
   });
 };
 
+// Update employee managers
+updateManager = () => {
+  let sql = `SELECT employee.id, employee.first_name, employee.last_name, manager_id FROM employee`;
+
+  let employeeList = [];
+
+  connection.query(sql, (error, response) => {
+    if (error) throw error;
+
+    response.forEach((employee) => {
+      employeeList.push(employee.first_name + ' ' + employee.last_name);
+    });
+
+    inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'employee',
+          message: 'Select Employee to change their manager',
+          choices: employeeList,
+        },
+        {
+          type: 'list',
+          name: 'manager',
+          message: 'Select new Manager',
+          choices: employeeList,
+        },
+      ])
+      .then((res) => {
+        let employeeID, managerID;
+        response.forEach((employee) => {
+          if (res.employee === employee.first_name + ' ' + employee.last_name) {
+            employeeID = employee.id;
+          }
+
+          if (res.manager === employee.first_name + ' ' + employee.last_name) {
+            managerID = employee.id;
+          }
+
+          console.log(employeeID, managerID);
+
+          if (employeeID === managerID) {
+            console.log('Invalid selection');
+            promptUser();
+          } else {
+            let sql = `UPDATE employee SET employee.manager_id = ? WHERE employee.id = ?`;
+
+            connection.query(sql, [managerID, employeeID], (error) => {
+              if (error) throw error;
+              promptUser();
+            });
+          }
+        });
+      });
+  });
+};
 // // Default response for any other request (Not Found)
 // app.use((req, res) => {
 //     res.status(404).end();
