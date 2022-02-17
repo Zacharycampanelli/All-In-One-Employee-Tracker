@@ -165,16 +165,20 @@ viewEmployeesByManager = () => {
             managerID = employee.id;
             console.log('success' + managerID);
           }
+        });
           const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, employee.manager_id 
           FROM employee
-          WHERE employee.manager_id = ?`;
+          WHERE employee.manager_id = ?
+          INNER JOIN `
+          ;
 
-          connection.query(sql, [managerID], (error) => {
+          connection.query(sql, [managerID], (error, response) => {
             if (error) throw error;
+            console.table(response);
             promptUser();
           });
         });
-      });
+      
   });
 };
 
