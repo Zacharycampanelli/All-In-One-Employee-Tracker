@@ -157,6 +157,7 @@ viewEmployeesByManager = () => {
         },
       ])
       .then((res) => {
+        console.log(res.manager);
         let managerID;
 
         response.forEach((employee) => {
@@ -478,21 +479,21 @@ updateManager = () => {
           if (res.manager === employee.first_name + ' ' + employee.last_name) {
             managerID = employee.id;
           }
-
-          console.log(employeeID, managerID);
-
-          if (employeeID === managerID) {
-            console.log('Invalid selection');
-            promptUser();
-          } else {
-            let sql = `UPDATE employee SET employee.manager_id = ? WHERE employee.id = ?`;
-
-            connection.query(sql, [managerID, employeeID], (error) => {
-              if (error) throw error;
-              promptUser();
-            });
-          }
         });
+
+        console.log(employeeID, managerID);
+
+        if (employeeID === managerID) {
+          console.log('Invalid selection');
+          // promptUser();
+        } else {
+          let sql = `UPDATE employee SET employee.manager_id = ? WHERE employee.id = ?`;
+
+          connection.query(sql, [managerID, employeeID], (error) => {
+            if (error) throw error;
+            promptUser();
+          });
+        }
       });
   });
 };
