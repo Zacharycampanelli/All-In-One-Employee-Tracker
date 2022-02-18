@@ -37,7 +37,8 @@ const promptUser = () => {
           'Update employee managers',
           'View employees by manager',
           'View employees by department',
-          // Delete departments, roles, employees
+          'Delete employee',
+          // Delete departments, roles, 
           // View combined salaries of a department
           'Exit',
         ],
@@ -84,6 +85,10 @@ const promptUser = () => {
 
       if (choices === 'View employees by department') {
         viewEmployeesByDepartment();
+      }
+
+      if (choices === 'Delete employee') {
+        deleteEmployee();
       }
 
       if (choices === 'Exit') {
@@ -553,6 +558,46 @@ updateManager = () => {
       });
   });
 };
+
+// DELETE
+deleteEmployee = () => {
+  console.log("here");
+  let sql = `SELECT employee.first_name, employee.last_name FROM employee`;
+
+  let employeeList = [];
+
+  connection.query(sql, (error, response) => {
+    if (error) throw error;
+
+    response.forEach((employee) => {
+      employeeList.push(employee.first_name + ' ' + employee.last_name);
+    });
+
+    inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'employee',
+          message: 'Select Employee to Delete',
+          choices: employeeList,
+        }
+      ])
+      .then((res) => {
+        let employee = res.employee;
+        employee = employee.split(' ');
+        firstName = employee[0];
+        lastName = employee[1];
+        console.log(firstName, lastName)
+        
+        let sql = `DELETE from employee WHERE employee.first_name = ? AND employee.last_name = ?`;
+        connection.query(sql, [firstName, lastName], (error) => {
+          if (error) throw error;
+          promptUser();
+        })
+      })
+  });
+
+}
 // // Default response for any other request (Not Found)
 // app.use((req, res) => {
 //     res.status(404).end();
