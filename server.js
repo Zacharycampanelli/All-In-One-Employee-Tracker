@@ -36,7 +36,7 @@ const promptUser = () => {
           'Update an employee role',
           'Update employee managers',
           'View employees by manager',
-          // View employees by department
+          'View employees by department',
           // Delete departments, roles, employees
           // View combined salaries of a department
           'Exit',
@@ -80,6 +80,10 @@ const promptUser = () => {
 
       if (choices === 'View employees by manager') {
         viewEmployeesByManager();
+      }
+
+      if (choices === 'View employees by department') {
+        viewEmployeesByDepartment();
       }
 
       if (choices === 'Exit') {
@@ -168,8 +172,8 @@ viewEmployeesByManager = () => {
         });
           const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, employee.manager_id 
           FROM employee
-          WHERE employee.manager_id = ?
-          INNER JOIN `
+          WHERE employee.manager_id = ?`
+          // INNER JOIN Employees ON Employees.manager_id=Employees.employee.id`
           ;
 
           connection.query(sql, [managerID], (error, response) => {
@@ -177,6 +181,54 @@ viewEmployeesByManager = () => {
             console.table(response);
             promptUser();
           });
+        });
+      
+  });
+};
+
+viewEmployeesByDepartment = () => {
+  let sql = `SELECT department.department_name FROM department`;
+  let departmentList = [];
+
+  connection.query(sql, (error, response) => {
+    if (error) throw error;
+    
+    console.log(response);
+
+    response.forEach((department) => {
+      departmentList.push(department.department_name);
+    });
+
+    inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'department',
+          message: 'Select department to view employees:',
+          choices: departmentList,
+        },
+      ])
+      .then((res) => {
+       
+        let dept_name = res.department;
+        console.log(dept_name);
+        
+        const sql =  "SELECT first_name, last_name, department.department_name FROM ((employee INNER JOIN role ON role_id = role.id) INNER JOIN department ON department_id = department.id) WHERE department_name = ?;";
+        connection.query(sql, [dept_name], (error, response) => {
+          if (error) throw error;
+          console.table(response);
+          promptUser();
+        });
+          // const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, employee.manager_id 
+          // FROM employee
+          // WHERE employee.manager_id = ?`
+      
+
+          // connection.query(sql, [managerID], (error, response) => {
+          //   if (error) throw error;
+          //   console.table(response);
+          //   promptUser();
+          // });
         });
       
   });
