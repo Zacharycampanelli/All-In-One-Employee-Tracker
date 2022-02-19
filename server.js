@@ -38,7 +38,8 @@ const promptUser = () => {
           'View employees by manager',
           'View employees by department',
           'Delete employee',
-          // Delete departments, roles, 
+          'Delete role',
+          'Delete department', 
           // View combined salaries of a department
           'Exit',
         ],
@@ -89,6 +90,14 @@ const promptUser = () => {
 
       if (choices === 'Delete employee') {
         deleteEmployee();
+      }
+
+      if (choices === 'Delete role') {
+        deleteRole();
+      }
+
+      if (choices === 'Delete department') {
+        deleteDepartment();
       }
 
       if (choices === 'Exit') {
@@ -166,28 +175,25 @@ viewEmployeesByManager = () => {
         },
       ])
       .then((res) => {
-        console.log(res.manager);
         let managerID;
 
         response.forEach((employee) => {
           if (res.manager === employee.first_name + ' ' + employee.last_name) {
             managerID = employee.id;
-            console.log('success' + managerID);
           }
         });
-          const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, employee.manager_id 
-          FROM employee
-          WHERE employee.manager_id = ?`
-          // INNER JOIN Employees ON Employees.manager_id=Employees.employee.id`
-          ;
-
-          connection.query(sql, [managerID], (error, response) => {
-            if (error) throw error;
-            console.table(response);
-            promptUser();
-          });
+        const sql = `SELECT e1.first_name AS first_name, e1.last_name AS last_name, e1.manager_id, 
+        CONCAT_WS(' ',COALESCE(e2.first_name, 'unknown'), COALESCE(e2.last_name , 'unknown')) AS manager_name
+          FROM employee as e1
+          LEFT OUTER JOIN employee AS e2 ON e2.id = e1.manager_id
+          WHERE e1.manager_id = ?`;
+        // INNER JOIN Employees ON Employees.manager_id=Employees.employee.id`
+        connection.query(sql, [managerID], (error, response) => {
+          if (error) throw error;
+          console.table(response);
+          promptUser();
         });
-      
+      });
   });
 };
 
@@ -197,7 +203,7 @@ viewEmployeesByDepartment = () => {
 
   connection.query(sql, (error, response) => {
     if (error) throw error;
-    
+
     console.log(response);
 
     response.forEach((department) => {
@@ -214,28 +220,26 @@ viewEmployeesByDepartment = () => {
         },
       ])
       .then((res) => {
-       
         let dept_name = res.department;
         console.log(dept_name);
-        
-        const sql =  "SELECT first_name, last_name, department.department_name FROM ((employee INNER JOIN role ON role_id = role.id) INNER JOIN department ON department_id = department.id) WHERE department_name = ?;";
+
+        const sql =
+          'SELECT first_name, last_name, department.department_name FROM ((employee INNER JOIN role ON role_id = role.id) INNER JOIN department ON department_id = department.id) WHERE department_name = ?;';
         connection.query(sql, [dept_name], (error, response) => {
           if (error) throw error;
           console.table(response);
           promptUser();
         });
-          // const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, employee.manager_id 
-          // FROM employee
-          // WHERE employee.manager_id = ?`
-      
+        // const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, employee.manager_id
+        // FROM employee
+        // WHERE employee.manager_id = ?`
 
-          // connection.query(sql, [managerID], (error, response) => {
-          //   if (error) throw error;
-          //   console.table(response);
-          //   promptUser();
-          // });
-        });
-      
+        // connection.query(sql, [managerID], (error, response) => {
+        //   if (error) throw error;
+        //   console.table(response);
+        //   promptUser();
+        // });
+      });
   });
 };
 
@@ -561,7 +565,7 @@ updateManager = () => {
 
 // DELETE
 deleteEmployee = () => {
-  console.log("here");
+  console.log('here');
   let sql = `SELECT employee.first_name, employee.last_name FROM employee`;
 
   let employeeList = [];
@@ -580,23 +584,92 @@ deleteEmployee = () => {
           name: 'employee',
           message: 'Select Employee to Delete',
           choices: employeeList,
-        }
+        },
       ])
       .then((res) => {
         let employee = res.employee;
         employee = employee.split(' ');
         firstName = employee[0];
         lastName = employee[1];
-        console.log(firstName, lastName)
-        
+        console.log(firstName, lastName);
+
         let sql = `DELETE from employee WHERE employee.first_name = ? AND employee.last_name = ?`;
         connection.query(sql, [firstName, lastName], (error) => {
           if (error) throw error;
           promptUser();
-        })
-      })
+        });
+      });
   });
+};
 
+deleteRole = () => {
+  console.log('here');
+  let sql = `SELECT role.title FROM role`;
+
+  let roleList = [];
+
+  connection.query(sql, (error, response) => {
+    if (error) throw error;
+
+    response.forEach((role) => {
+      roleList.push(role.title);
+    });
+
+    inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'role',
+          message: 'Select Role to Delete',
+          choices: roleList,
+        },
+      ])
+      .then((res) => {
+        let roleToDelete = res.role;
+        console.log(roleToDelete);
+
+        let sql = `DELETE from role WHERE role.title = ? `;
+        connection.query(sql, roleToDelete, (error) => {
+          if (error) throw error;
+          promptUser();
+        });
+      });
+  });
+}
+
+deleteDepartment = () => {
+  console.log('here');
+  let sql = `SELECT department.department_name FROM department`;
+
+  let departmentList = [];
+
+  connection.query(sql, (error, response) => {
+    if (error) throw error;
+
+    response.forEach((department) => {
+      departmentList.push(department.department_name);
+    });
+
+    inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'department',
+          message: 'Select Department to Delete',
+          choices: departmentList,
+        },
+      ])
+      .then((res) => {
+        let deptToDelete = res.department;
+        console.log(deptToDelete);
+
+        let sql = `DELETE from department WHERE department.department_name = ? `;
+        connection.query(sql, deptToDelete, (error) => {
+          if (error) throw error;
+          promptUser();
+        });
+      });
+  });
 }
 // // Default response for any other request (Not Found)
 // app.use((req, res) => {
