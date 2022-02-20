@@ -155,7 +155,7 @@ viewEmployees = () => {
   // ORDER BY employee.id ASC`;
   
   `SELECT employee.id, employee.first_name, employee.last_name, role.title,
-  department.department_name AS department,role.salary,CONCAT(a.first_name, " ", a.last_name) AS manager
+  department.department_name AS department,role.salary,COALESCE(CONCAT(a.first_name, " ", a.last_name), ' ') AS manager
   FROM employee
   LEFT JOIN role ON employee.role_id = role.id
   LEFT JOIN department ON role.department_id = department.id
