@@ -5,6 +5,8 @@ const cTable = require('console.table');
 const mysql = require('mysql2');
 const { connect } = require('./db/connections');
 const PromptUI = require('inquirer/lib/ui/prompt');
+
+const employeeRoutes = require('./routes/employee-routes')
 // const PORT = process.env.PORT || 3001;
 // const app = express();
 
@@ -143,23 +145,33 @@ viewRoles = () => {
 // };
 
 viewEmployees = () => {
-  const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, role.title AS role_title, 
-                department.department_name AS department, role.salary AS salary, employee.manager_id as manager
-                FROM employee, role, department
-                WHERE department.id = role.department_id
-                AND role.id = employee.role_id
-                ORDER BY employee.id ASC`;
+  const sql = 
+
+  // `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, role.title AS role_title, 
+  // department.department_name AS department, role.salary AS salary, employee.manager_id as manager
+  // FROM employee e, role, department
+  // WHERE department.id = role.department_id
+  // AND role.id = employee.role_id
+  // ORDER BY employee.id ASC`;
+  
+  `SELECT employee.id, employee.first_name, employee.last_name, role.title,
+  department.department_name AS department,role.salary,CONCAT(a.first_name, " ", a.last_name) AS manager
+  FROM employee
+  LEFT JOIN role ON employee.role_id = role.id
+  LEFT JOIN department ON role.department_id = department.id
+  LEFT JOIN employee a ON a.id = employee.manager_id`
+  
   // AND employee.manager_id = employee.first_name`
   connection /*.promise()*/
-    .query(sql, (err, rows) => {
+    .query(sql, (err, response) => {
       if (err) throw err;
-      console.table(rows);
+      console.table(response);
       promptUser();
     });
 };
 
 viewEmployeesByManager = () => {
-  let sql = `SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id FROM employee`;
+  const sql = `SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id FROM employee`;
   let employeeList = [];
 
   connection.query(sql, (error, response) => {
@@ -202,13 +214,11 @@ viewEmployeesByManager = () => {
 };
 
 viewEmployeesByDepartment = () => {
-  let sql = `SELECT department.department_name FROM department`;
+  const sql = `SELECT department.department_name FROM department`;
   let departmentList = [];
 
   connection.query(sql, (error, response) => {
     if (error) throw error;
-
-    console.log(response);
 
     response.forEach((department) => {
       departmentList.push(department.department_name);
@@ -225,7 +235,7 @@ viewEmployeesByDepartment = () => {
       ])
       .then((res) => {
         let dept_name = res.department;
-        console.log(dept_name);
+
 
         const sql =
           'SELECT first_name, last_name, department.department_name FROM ((employee INNER JOIN role ON role_id = role.id) INNER JOIN department ON department_id = department.id) WHERE department_name = ?;';
@@ -314,7 +324,6 @@ addEmployee = () => {
                 ])
                 .then((managerChoice) => {
                   const manager = managerChoice.manager;
-                  console.log(manager);
                   newEmployee.push(manager);
                   const sql = `INSERT INTO employee(first_name, last_name, role_id, manager_id)
                                     VALUES(?, ?, ?, ?)`;
@@ -384,7 +393,7 @@ const addRole = () => {
           }
         });
 
-        let sql = `INSERT INTO role (title, salary, department_id) VALUES (?,?,?)`;
+        const sql = `INSERT INTO role (title, salary, department_id) VALUES (?,?,?)`;
         let newest = [newRoleName, roleData.salary, deptID];
 
         connection.query(sql, newest, (error) => {
@@ -415,7 +424,7 @@ addDepartment = () => {
     ])
     .then((deptData) => {
       let deptName = deptData.newDept;
-      let sql = `INSERT INTO department (department_name) VALUES (?)`;
+      const sql = `INSERT INTO department (department_name) VALUES (?)`;
 
       connection.query(sql, deptName, (error) => {
         if (error) throw error;
@@ -428,7 +437,7 @@ addDepartment = () => {
 // UPDATE
 
 updateEmployeeRole = () => {
-  let sql =
+  const sql =
     'SELECT employee.id, employee.first_name, employee.last_name, role.id AS "role_id" FROM employee, role, department WHERE department.id = role.department_id AND role.id = employee.role_id';
   let employeeList = [];
 
@@ -439,7 +448,7 @@ updateEmployeeRole = () => {
       employeeList.push(employee.first_name + ' ' + employee.last_name);
     });
 
-    let sql = 'SELECT role.id, role.title FROM role';
+    const sql = 'SELECT role.id, role.title FROM role';
     let roleList = [];
     connection.query(sql, (error, response) => {
       if (error) throw error;
@@ -477,21 +486,16 @@ updateEmployeeRole = () => {
           // response.forEach(iterate);
 
           response.forEach((role) => {
-            console.log('%*%*%*');
-            console.log(role);
             if (res.chosenRole === role.title) {
-              console.log('success');
-              console.log(role.id);
               newRoleID = role.id;
             }
           });
 
           for (let i = 0; i < employeeList.length; i++) {
             if (res.chosenEmployee === employeeList[i]) {
-              console.log(res.chosenEmployee);
-              console.log(employeeList[i]);
+
               employeeID = i + 1;
-              console.log(employeeID);
+
             }
           }
 
@@ -502,7 +506,7 @@ updateEmployeeRole = () => {
           //
           // });
 
-          let updateSQL = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
+          const updateSQL = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
           connection.query(updateSQL, [newRoleID, employeeID], (error) => {
             if (error) throw error;
             promptUser();
@@ -552,7 +556,6 @@ updateManager = () => {
           }
         });
 
-        console.log(employeeID, managerID);
 
         if (employeeID === managerID) {
           console.log('Invalid selection');
@@ -571,8 +574,7 @@ updateManager = () => {
 
 // DELETE
 deleteEmployee = () => {
-  console.log('here');
-  let sql = `SELECT employee.first_name, employee.last_name FROM employee`;
+  const sql = `SELECT employee.first_name, employee.last_name FROM employee`;
 
   let employeeList = [];
 
@@ -597,9 +599,9 @@ deleteEmployee = () => {
         employee = employee.split(' ');
         firstName = employee[0];
         lastName = employee[1];
-        console.log(firstName, lastName);
 
-        let sql = `DELETE from employee WHERE employee.first_name = ? AND employee.last_name = ?`;
+
+        const sql = `DELETE from employee WHERE employee.first_name = ? AND employee.last_name = ?`;
         connection.query(sql, [firstName, lastName], (error) => {
           if (error) throw error;
           promptUser();
@@ -609,8 +611,7 @@ deleteEmployee = () => {
 };
 
 deleteRole = () => {
-  console.log('here');
-  let sql = `SELECT role.title FROM role`;
+  const sql = `SELECT role.title FROM role`;
 
   let roleList = [];
 
@@ -632,9 +633,8 @@ deleteRole = () => {
       ])
       .then((res) => {
         let roleToDelete = res.role;
-        console.log(roleToDelete);
 
-        let sql = `DELETE from role WHERE role.title = ? `;
+        const sql = `DELETE from role WHERE role.title = ? `;
         connection.query(sql, roleToDelete, (error) => {
           if (error) throw error;
           promptUser();
@@ -644,8 +644,7 @@ deleteRole = () => {
 }
 
 deleteDepartment = () => {
-  console.log('here');
-  let sql = `SELECT department.department_name FROM department`;
+  const sql = `SELECT department.department_name FROM department`;
 
   let departmentList = [];
 
@@ -667,9 +666,8 @@ deleteDepartment = () => {
       ])
       .then((res) => {
         let deptToDelete = res.department;
-        console.log(deptToDelete);
 
-        let sql = `DELETE from department WHERE department.department_name = ? `;
+        const sql = `DELETE from department WHERE department.department_name = ? `;
         connection.query(sql, deptToDelete, (error) => {
           if (error) throw error;
           promptUser();
