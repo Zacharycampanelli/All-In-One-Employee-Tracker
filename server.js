@@ -3,20 +3,16 @@ const connection = require('./db/connections');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
 const mysql = require('mysql2');
+const mysql2 = require('mysql2/promise');
 const { connect } = require('./db/connections');
 const PromptUI = require('inquirer/lib/ui/prompt');
-
-const employeeRoutes = require('./routes/employee-routes')
-// const PORT = process.env.PORT || 3001;
-// const app = express();
-
-// // Express middleware
-// app.use(express.urlencoded({ extended: false }));
-// app.use(express.json());
 
 // Database connect
 connection.connect((error) => {
   if (error) throw error;
+  console.log('==============================');
+  console.log('Professional Employee Tracker');
+  console.log('==============================');
   promptUser();
 });
 
@@ -40,16 +36,16 @@ const promptUser = () => {
           'View employees by manager',
           'View employees by department',
           'Delete employee',
-          'Delete role',
-          'Delete department', 
-          // View combined salaries of a department
+          // 'Delete role',
+          // 'Delete department',
+          // 'View combined salaries of a department',
           'Exit',
         ],
       },
     ])
     .then((answers) => {
       const { choices } = answers;
-
+      console.log('==============================');
       if (choices === 'View all Departments') {
         viewDepartments();
       }
@@ -94,13 +90,17 @@ const promptUser = () => {
         deleteEmployee();
       }
 
-      if (choices === 'Delete role') {
-        deleteRole();
-      }
+      // if (choices === 'Delete role') {
+      //   deleteRole();
+      // }
 
-      if (choices === 'Delete department') {
-        deleteDepartment();
-      }
+      // if (choices === 'Delete department') {
+      //   deleteDepartment();
+      // }
+
+      // if (choices === 'View combined salaries of a department') {
+      //   viewCombinedSalaries();
+      // }
 
       if (choices === 'Exit') {
         connection.end();
@@ -109,68 +109,57 @@ const promptUser = () => {
 };
 
 // VIEW
+
+// View all departments in database
 viewDepartments = () => {
+  console.log('==============================');
   const sql = `SELECT department.id AS id, department.department_name AS department FROM department `;
   connection /*.promise()*/
     .query(sql, (err, rows) => {
       if (err) throw err;
       console.table(rows);
+      console.log('==============================');
       promptUser();
     });
-
-  
 };
 
-
-
+// View all job roles in database
 viewRoles = () => {
-  const sql = `SELECT role.id AS id, role.title AS title, role.salary AS salary FROM role `;
+  console.log('==============================');
+  const sql = `SELECT role.title, role.salary,   department.department_name 
+  FROM role
+  LEFT OUTER JOIN department ON role.department_id = department.id`;
   connection /*.promise()*/
     .query(sql, (err, rows) => {
       if (err) throw err;
       console.table(rows);
+      console.log('==============================');
       promptUser();
     });
-
-  
 };
 
-// viewEmployee = (id) => {
-//   const sql = `SELECT * FROM employee WHERE employee.id = ${parseInt(id)}`;
-//   connection /*.promise()*/
-//     .query(sql, (err, rows) => {
-//       if (err) throw err;
-//       console.table(rows);
-//     });
-// };
-
+// View all employees in database
 viewEmployees = () => {
-  const sql = 
-
-  // `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, role.title AS role_title, 
-  // department.department_name AS department, role.salary AS salary, employee.manager_id as manager
-  // FROM employee e, role, department
-  // WHERE department.id = role.department_id
-  // AND role.id = employee.role_id
-  // ORDER BY employee.id ASC`;
-  
-  `SELECT employee.id, employee.first_name, employee.last_name, role.title,
+  console.log('==============================');
+  const sql = `SELECT employee.id, employee.first_name, employee.last_name, role.title,
   department.department_name AS department,role.salary,COALESCE(CONCAT(a.first_name, " ", a.last_name), ' ') AS manager
   FROM employee
   LEFT JOIN role ON employee.role_id = role.id
   LEFT JOIN department ON role.department_id = department.id
-  LEFT JOIN employee a ON a.id = employee.manager_id`
-  
-  // AND employee.manager_id = employee.first_name`
+  LEFT JOIN employee a ON a.id = employee.manager_id`;
+
   connection /*.promise()*/
     .query(sql, (err, response) => {
       if (err) throw err;
       console.table(response);
+      console.log('==============================');
       promptUser();
     });
 };
 
+// View all employees in the database under a selected manager
 viewEmployeesByManager = () => {
+  console.log('==============================');
   const sql = `SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id FROM employee`;
   let employeeList = [];
 
@@ -203,17 +192,20 @@ viewEmployeesByManager = () => {
           FROM employee as e1
           LEFT OUTER JOIN employee AS e2 ON e2.id = e1.manager_id
           WHERE e1.manager_id = ?`;
-        // INNER JOIN Employees ON Employees.manager_id=Employees.employee.id`
+
         connection.query(sql, [managerID], (error, response) => {
           if (error) throw error;
           console.table(response);
+          console.log('==============================');
           promptUser();
         });
       });
   });
 };
 
+// View all employees in the database under a selected department
 viewEmployeesByDepartment = () => {
+  console.log('==============================');
   const sql = `SELECT department.department_name FROM department`;
   let departmentList = [];
 
@@ -236,29 +228,25 @@ viewEmployeesByDepartment = () => {
       .then((res) => {
         let dept_name = res.department;
 
-
         const sql =
           'SELECT first_name, last_name, department.department_name FROM ((employee INNER JOIN role ON role_id = role.id) INNER JOIN department ON department_id = department.id) WHERE department_name = ?;';
         connection.query(sql, [dept_name], (error, response) => {
           if (error) throw error;
           console.table(response);
+          console.log('==============================');
           promptUser();
         });
-        // const sql = `SELECT employee.id AS id, employee.first_name AS first_name, employee.last_name AS last_name, employee.manager_id
-        // FROM employee
-        // WHERE employee.manager_id = ?`
-
-        // connection.query(sql, [managerID], (error, response) => {
-        //   if (error) throw error;
-        //   console.table(response);
-        //   promptUser();
-        // });
       });
   });
 };
 
+// viewCombinedSalaries = () => {};
+
 // ADD
+
+// Add a single employee to the database
 addEmployee = () => {
+  console.log('==============================');
   inquirer
     .prompt([
       {
@@ -293,7 +281,10 @@ addEmployee = () => {
       const roleSQL = `Select role.id, role.title FROM role`;
       connection.query(roleSQL, (error, response) => {
         if (error) throw error;
-        const roles = response.map(({ id, title }) => ({ name: title, value: id }));
+        const roles = response.map(({ id, title }) => ({
+          name: title,
+          value: id,
+        }));
         inquirer
           .prompt([
             {
@@ -309,10 +300,12 @@ addEmployee = () => {
             const managerSQL = `SELECT * FROM employee`;
             connection.query(managerSQL, (error, response) => {
               if (error) throw error;
-              const managers = response.map(({ id, first_name, last_name }) => ({
-                name: first_name + ' ' + last_name,
-                value: id,
-              }));
+              const managers = response.map(
+                ({ id, first_name, last_name }) => ({
+                  name: first_name + ' ' + last_name,
+                  value: id,
+                })
+              );
               inquirer
                 .prompt([
                   {
@@ -330,7 +323,8 @@ addEmployee = () => {
                   connection.query(sql, newEmployee, (error) => {
                     if (error) throw error;
                     viewEmployees();
-                    promptUser();
+                    console.log('==============================');
+              
                   });
                 });
             });
@@ -339,11 +333,25 @@ addEmployee = () => {
     });
 };
 
+// async function getDepartmentId(departmentName) {
+//   let sql = 'SELECT * FROM department WHERE department.department_name=?';
+//   let args = [departmentName];
+//   connection.query(sql, args, (error, response) => {
+//     if (error) throw error;
+//     const id = response;
+//     console.log('here', id[0].id);
+//     return response.id;
+//   });
+// }
+
+// Add a new role to the database
 const addRole = () => {
+  console.log('==============================');
   const sql = 'SELECT * FROM department';
   connection.query(sql, (error, response) => {
     if (error) throw error;
     let departments = [];
+    
     response.forEach((department) => {
       departments.push(department.department_name);
     });
@@ -384,28 +392,30 @@ const addRole = () => {
         },
       ])
       .then((roleData) => {
-        let newRoleName = roleData.newRole;
-        let deptID; // = roleData.departmentName;
+        let deptID;
 
-        response.forEach((department) => {
-          if (roleData.department_name === department.department_name) {
-            deptID = department.id;
-          }
-        });
+        for (let i = 0; i < response.length; i++) {
+          if(response[i].department_name === roleData.departmentName)
+          deptID = response[i].id;
+        }
 
-        const sql = `INSERT INTO role (title, salary, department_id) VALUES (?,?,?)`;
-        let newest = [newRoleName, roleData.salary, deptID];
+        newRole = roleData.newRole;
+        newSalary = roleData.salary;
 
-        connection.query(sql, newest, (error) => {
+        const sql = `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`;
+        connection.query(sql, [newRole, newSalary, deptID], (error) => {
           if (error) throw error;
           viewRoles();
-          promptUser();
+          console.log('==============================');
+          
         });
       });
   });
 };
 
+// Add a new department to the database
 addDepartment = () => {
+  console.log('==============================');
   inquirer
     .prompt([
       {
@@ -429,14 +439,17 @@ addDepartment = () => {
       connection.query(sql, deptName, (error) => {
         if (error) throw error;
         viewDepartments();
-        promptUser();
+        console.log('==============================');
+
       });
     });
 };
 
 // UPDATE
 
+// Update an employee's role
 updateEmployeeRole = () => {
+  console.log('==============================');
   const sql =
     'SELECT employee.id, employee.first_name, employee.last_name, role.id AS "role_id" FROM employee, role, department WHERE department.id = role.department_id AND role.id = employee.role_id';
   let employeeList = [];
@@ -475,16 +488,6 @@ updateEmployeeRole = () => {
         .then((res) => {
           let newRoleID, employeeID;
 
-          // function iterate(item) {
-          //   // if(item)
-          //   console.log(res);
-          //   console.log();
-          //   console.log(response);
-
-          // }
-
-          // response.forEach(iterate);
-
           response.forEach((role) => {
             if (res.chosenRole === role.title) {
               newRoleID = role.id;
@@ -493,31 +496,24 @@ updateEmployeeRole = () => {
 
           for (let i = 0; i < employeeList.length; i++) {
             if (res.chosenEmployee === employeeList[i]) {
-
               employeeID = i + 1;
-
             }
           }
-
-          // employeeList.forEach((employee) => {
-          //   if (res.chosenEmployee === employeeList[employee]) {
-          //     employeeID = 'employee.id';
-          //   }
-          //
-          // });
 
           const updateSQL = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
           connection.query(updateSQL, [newRoleID, employeeID], (error) => {
             if (error) throw error;
-            promptUser();
+            viewEmployees();
+            console.log('==============================');
           });
         });
     });
   });
 };
 
-// Update employee managers
+// Update an employee's manager
 updateManager = () => {
+  console.log('==============================');
   let sql = `SELECT employee.id, employee.first_name, employee.last_name, manager_id FROM employee`;
 
   let employeeList = [];
@@ -556,16 +552,15 @@ updateManager = () => {
           }
         });
 
-
         if (employeeID === managerID) {
           console.log('Invalid selection');
-          // promptUser();
+          updateManager();
         } else {
           let sql = `UPDATE employee SET employee.manager_id = ? WHERE employee.id = ?`;
 
           connection.query(sql, [managerID, employeeID], (error) => {
             if (error) throw error;
-            promptUser();
+            viewEmployees();
           });
         }
       });
@@ -573,7 +568,10 @@ updateManager = () => {
 };
 
 // DELETE
+
+// Delete an employee from the database
 deleteEmployee = () => {
+  console.log('==============================');
   const sql = `SELECT employee.first_name, employee.last_name FROM employee`;
 
   let employeeList = [];
@@ -600,17 +598,19 @@ deleteEmployee = () => {
         firstName = employee[0];
         lastName = employee[1];
 
-
         const sql = `DELETE from employee WHERE employee.first_name = ? AND employee.last_name = ?`;
         connection.query(sql, [firstName, lastName], (error) => {
           if (error) throw error;
-          promptUser();
+          viewEmployees();
+          console.log('==============================');
         });
       });
   });
 };
 
+// Delete a role from the database
 deleteRole = () => {
+  console.log('==============================');
   const sql = `SELECT role.title FROM role`;
 
   let roleList = [];
@@ -637,13 +637,16 @@ deleteRole = () => {
         const sql = `DELETE from role WHERE role.title = ? `;
         connection.query(sql, roleToDelete, (error) => {
           if (error) throw error;
+          console.log('==============================');
           promptUser();
         });
       });
   });
-}
+};
 
+// Delete a department from the database
 deleteDepartment = () => {
+  console.log('==============================');
   const sql = `SELECT department.department_name FROM department`;
 
   let departmentList = [];
@@ -670,21 +673,9 @@ deleteDepartment = () => {
         const sql = `DELETE from department WHERE department.department_name = ? `;
         connection.query(sql, deptToDelete, (error) => {
           if (error) throw error;
+          console.log('==============================');
           promptUser();
         });
       });
   });
-}
-// // Default response for any other request (Not Found)
-// app.use((req, res) => {
-//     res.status(404).end();
-//   });
-
-//   // Start server after DB connection
-//   db.connect(err => {
-//     if (err) throw err;
-//     console.log('Database connected.');
-//     app.listen(PORT, () => {
-//       console.log(`Server running on port ${PORT}`);
-//     });
-//   });
+};
